@@ -5,7 +5,7 @@ LABEL maintainer="Carl Pearson <me@carlpearson.net>"
 LABEL org.opencontainers.image.title="cmake-format 0.6"
 LABEL description="A container with cmake-format 0.6"
 LABEL org.opencontainers.image.description="A container with cmake-format 0.6"
-LABEL org.opencontainers.image.source https://github.com/cwpearson/clang-format
+LABEL org.opencontainers.image.source https://github.com/cwpearson/cmake-format
 LABEL org.opencontainers.image.licenses="GPLv3"
 
 RUN dnf install -y \
