@@ -12,8 +12,8 @@ on:
       - '**/*.dockerfile'
 
 jobs:
-  build-0_6_13:
-    name: Build + Publish 16
+  build-06:
+    name: Build + Publish 0.6.13
     runs-on: ubuntu-latest
     permissions:
       contents: read
