@@ -8,10 +8,7 @@ concurrency:
 on:
   push:
     branches: [ "master" ]
-    paths:
-      - '**/*.dockerfile'
-      - 'pip-install.sh'
-      - '.github/**/*/.yml'
+  workflow_dispatch:
 
 jobs:
   build-06:
