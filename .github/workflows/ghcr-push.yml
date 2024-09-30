@@ -1,0 +1,39 @@
+name: Deploy to GHCR
+
+# only run most recent workflow in branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - '**/*.dockerfile'
+
+jobs:
+  build-0.6.13:
+    name: Build + Publish 16
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v4
+      name: Checkout
+
+    - name: Set Environment
+      run: |
+        echo "SLUG=ghcr.io/cwpearson/cmake-format-0.6.13" >> $GITHUB_ENV
+        echo "DATE=$(date +"%Y%m%d")" >> $GITHUB_ENV
+
+    - name: Build
+      run: |
+        docker build -f cmake-format-0.6.13.dockerfile -t "$SLUG:latest" -t "$SLUG:$DATE" .
+
+    - name: Publish to GHCR
+      run: |
+        echo '${{secrets.GHCR_TOKEN}}' | docker login ghcr.io -u cwpearson --password-stdin
+        docker push "$SLUG:latest"
+        docker push "$SLUG:$DATE"
