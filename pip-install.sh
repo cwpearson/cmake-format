@@ -4,7 +4,7 @@ set -eou pipefail
 
 NEXUS_ROOT=https://nexus.web.sandia.gov/
 
-if curl --output /dev/null --silent --head --fail "$NEXUS_ROOT"; then
+if curl --output /dev/null --silent --head --fail --max-time 10 "$NEXUS_ROOT"; then
   PIP_ARGS="--index-url=$NEXUS_ROOT/repository/pypi-proxy/simple"
 else
   PIP_ARGS=""
