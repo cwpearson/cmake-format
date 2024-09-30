@@ -13,7 +13,7 @@ on:
 
 jobs:
   build-06:
-    name: Build + Publish 0.6.13
+    name: "Build & Publish 0.6.13"
     runs-on: ubuntu-latest
     permissions:
       contents: read
