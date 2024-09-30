@@ -12,8 +12,8 @@ Inside the container, the working directory is /src, we use the volume mount to 
 ## Building the Image Locally
 
 ```bash
-podman build -f cmake-format-0.6.13.dockerfile -t cmake-format-0.6.13:latest
-podman run --rm -v "${PWD}"/src cmake-format-0.6.13:latest cmake-format ...
+podman build -f cmake-format-0.6.13.dockerfile -t cmake-format:0.6.13
+podman run --rm -v "${PWD}"/src cmake-format:0.6.13 cmake-format ...
 ```
 
 ## Deploy
