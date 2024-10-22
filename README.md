@@ -13,7 +13,7 @@ Inside the container, the working directory is /src, we use the volume mount to 
 
 ```bash
 podman build -f cmake-format-0.6.13.dockerfile -t cmake-format:0.6.13
-podman run --rm -v "${PWD}"/src cmake-format:0.6.13 cmake-format ...
+podman run --rm -v "${PWD}":/src cmake-format:0.6.13 cmake-format ...
 ```
 
 ## Deploy
