@@ -1,0 +1,76 @@
+name: Build and release cmake-format
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CMAKE_FORMAT_VERSION: "0.6.13"
+  PYINSTALLER_VERSION: "6.21.0"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-amd64
+            os: ubuntu-latest
+            asset: cmake-format-0.6.13-linux-amd64
+          - name: linux-arm64
+            os: ubuntu-24.04-arm
+            asset: cmake-format-0.6.13-linux-arm64
+          - name: macos-arm64
+            # macos-14 is GitHub's Apple Silicon runner label.
+            os: macos-14
+            asset: cmake-format-0.6.13-macos-arm64
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install build dependencies
+        run: python -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}"
+      - name: Build binary
+        run: python scripts/build.py --name ${{ matrix.asset }}
+      - name: Smoke test
+        run: ./dist/${{ matrix.asset }} --version
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - id: tag
+        name: Compute release tag
+        shell: bash
+        run: |
+          branch="${GITHUB_REF_NAME//\//-}"
+          short_sha="${GITHUB_SHA::7}"
+          echo "tag=${branch}-${short_sha}" >> "$GITHUB_OUTPUT"
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: cmake-format ${{ steps.tag.outputs.tag }}
+          files: artifacts/*
+          make_latest: true
