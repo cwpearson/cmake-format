@@ -18,6 +18,15 @@ chmod +x cmake-format
 ./cmake-format --version
 ```
 
+### macOS quarantine
+
+If macOS blocks the downloaded binary, clear its quarantine attribute before
+running it:
+
+```sh
+xattr -d com.apple.quarantine cmake-format
+```
+
 ## Releases
 
 Every push to a branch builds and publishes all three binaries. The workflow
