@@ -45,12 +45,15 @@ python3 scripts/build.py
 ```
 
 To reproduce the Linux release environment locally, use the matching
-`manylinux2014` image for your architecture:
+`manylinux2014` image for your architecture. The workflow installs a conda-forge
+Python with micromamba because the Python interpreters bundled in the manylinux
+images are not built with the shared library that PyInstaller requires:
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work \
-  -e HOME=/tmp quay.io/pypa/manylinux2014_x86_64 \
-  bash -lc '/opt/python/cp312-cp312/bin/python -m venv /tmp/cmake-format-venv && /tmp/cmake-format-venv/bin/python -m pip install "cmakelang==0.6.13" "PyInstaller==6.21.0" && /tmp/cmake-format-venv/bin/python scripts/build.py'
+  -e HOME=/tmp -e CMAKE_FORMAT_VERSION=0.6.13 -e PYINSTALLER_VERSION=6.21.0 \
+  quay.io/pypa/manylinux2014_x86_64 \
+  bash -lc 'curl -Ls "https://micro.mamba.pm/api/micromamba/linux-64/latest" | tar -xvj -C /tmp bin/micromamba && export MAMBA_ROOT_PREFIX=/tmp/micromamba && /tmp/bin/micromamba create -y -n build -c conda-forge python=3.12 pip && /tmp/micromamba/envs/build/bin/python -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}" && /tmp/micromamba/envs/build/bin/python scripts/build.py'
 ```
 
 This project packages [cmakelang / cmake-format](https://github.com/cheshirekow/cmakelang), which is licensed under GPL-3.0.
