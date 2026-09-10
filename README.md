@@ -34,7 +34,8 @@ creates a release tag in the form `<branch>-<short-sha>` (for example,
 `main-a1b2c3d`) at the pushed commit. The Linux binaries are built inside
 `manylinux2014` containers (CentOS 7 / glibc 2.17 baseline) on Linux amd64 and
 Linux arm64 runners to keep their runtime GLIBC requirements as old as practical.
-The macOS arm64 binary is built natively on macOS arm64.
+After each binary is built, it is smoke-tested on the GitHub Actions host with
+`--version`. The macOS arm64 binary is built natively on macOS arm64.
 
 To build locally on your host:
 

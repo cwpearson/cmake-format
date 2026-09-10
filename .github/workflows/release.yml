@@ -60,7 +60,6 @@ jobs:
               /tmp/micromamba/envs/build/bin/python -m pip install --upgrade pip
               /tmp/micromamba/envs/build/bin/python -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}"
               /tmp/micromamba/envs/build/bin/python scripts/build.py --name "${{ matrix.asset }}"
-              ./dist/${{ matrix.asset }} --version
             '
       - uses: actions/setup-python@v6
         if: startsWith(matrix.name, 'macos-')
@@ -72,8 +71,7 @@ jobs:
       - name: Build macOS binary
         if: startsWith(matrix.name, 'macos-')
         run: python scripts/build.py --name ${{ matrix.asset }}
-      - name: Smoke test macOS binary
-        if: startsWith(matrix.name, 'macos-')
+      - name: Smoke test binary
         run: ./dist/${{ matrix.asset }} --version
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
