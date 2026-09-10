@@ -31,15 +31,26 @@ xattr -d com.apple.quarantine cmake-format
 
 Every push to a branch builds and publishes all three binaries. The workflow
 creates a release tag in the form `<branch>-<short-sha>` (for example,
-`main-a1b2c3d`) at the pushed commit. It runs natively on Linux amd64, Linux
-arm64, and macOS arm64.
+`main-a1b2c3d`) at the pushed commit. The Linux binaries are built inside
+`manylinux2014` containers (CentOS 7 / glibc 2.17 baseline) on Linux amd64 and
+Linux arm64 runners to keep their runtime GLIBC requirements as old as practical.
+The macOS arm64 binary is built natively on macOS arm64.
 
-To build locally:
+To build locally on your host:
 
 ```sh
 python3 -m pip install "cmakelang==0.6.13" "PyInstaller==6.21.0"
 python3 scripts/build.py
 ./dist/cmake-format --version
+```
+
+To reproduce the Linux release environment locally, use the matching
+`manylinux2014` image for your architecture:
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work \
+  -e HOME=/tmp quay.io/pypa/manylinux2014_x86_64 \
+  bash -lc '/opt/python/cp312-cp312/bin/python -m venv /tmp/cmake-format-venv && /tmp/cmake-format-venv/bin/python -m pip install "cmakelang==0.6.13" "PyInstaller==6.21.0" && /tmp/cmake-format-venv/bin/python scripts/build.py'
 ```
 
 This project packages [cmakelang / cmake-format](https://github.com/cheshirekow/cmakelang), which is licensed under GPL-3.0.
