@@ -46,15 +46,16 @@ python3 scripts/build.py
 ```
 
 To reproduce the Linux release environment locally, use the matching
-`manylinux2014` image for your architecture. The workflow installs a conda-forge
-Python with micromamba because the Python interpreters bundled in the manylinux
-images are not built with the shared library that PyInstaller requires:
+`manylinux2014` image for your architecture. The workflow builds CPython with a
+shared library inside the container because the Python interpreters bundled in
+the manylinux images are not built with the shared library that PyInstaller
+requires. Building it in CentOS 7 keeps `libpython` compatible with glibc 2.17:
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work \
-  -e HOME=/tmp -e CMAKE_FORMAT_VERSION=0.6.13 -e PYINSTALLER_VERSION=6.21.0 \
+  -e HOME=/tmp -e CMAKE_FORMAT_VERSION=0.6.13 -e PYINSTALLER_VERSION=6.21.0 -e CPYTHON_VERSION=3.12.12 \
   quay.io/pypa/manylinux2014_x86_64 \
-  bash -lc 'curl -Ls "https://micro.mamba.pm/api/micromamba/linux-64/latest" | tar -xvj -C /tmp bin/micromamba && export MAMBA_ROOT_PREFIX=/tmp/micromamba && /tmp/bin/micromamba create -y -n build -c conda-forge python=3.12 pip && /tmp/micromamba/envs/build/bin/python -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}" && /tmp/micromamba/envs/build/bin/python scripts/build.py'
+  bash -lc 'curl -fsSL -o "/tmp/Python-${CPYTHON_VERSION}.tgz" "https://www.python.org/ftp/python/${CPYTHON_VERSION}/Python-${CPYTHON_VERSION}.tgz" && tar -xzf "/tmp/Python-${CPYTHON_VERSION}.tgz" -C /tmp && cd "/tmp/Python-${CPYTHON_VERSION}" && ./configure --prefix=/tmp/cpython --enable-shared --with-ensurepip=install && make -j"$(nproc)" && make install && export LD_LIBRARY_PATH=/tmp/cpython/lib && /tmp/cpython/bin/python3 -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}" && cd /work && /tmp/cpython/bin/python3 scripts/build.py'
 ```
 
 This project packages [cmakelang / cmake-format](https://github.com/cheshirekow/cmakelang), which is licensed under GPL-3.0.

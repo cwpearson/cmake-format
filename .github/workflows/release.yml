@@ -15,6 +15,7 @@ permissions:
 env:
   CMAKE_FORMAT_VERSION: "0.6.13"
   PYINSTALLER_VERSION: "6.21.0"
+  CPYTHON_VERSION: "3.12.12"
 
 jobs:
   build:
@@ -27,12 +28,10 @@ jobs:
             os: ubuntu-latest
             asset: cmake-format-0.6.13-linux-amd64
             manylinux_image: quay.io/pypa/manylinux2014_x86_64
-            micromamba_platform: linux-64
           - name: linux-arm64
             os: ubuntu-24.04-arm
             asset: cmake-format-0.6.13-linux-arm64
             manylinux_image: quay.io/pypa/manylinux2014_aarch64
-            micromamba_platform: linux-aarch64
           - name: macos-arm64
             # macos-14 is GitHub's Apple Silicon runner label.
             os: macos-14
@@ -52,14 +51,21 @@ jobs:
             -e HOME=/tmp \
             -e CMAKE_FORMAT_VERSION \
             -e PYINSTALLER_VERSION \
+            -e CPYTHON_VERSION \
             ${{ matrix.manylinux_image }} \
             bash -euxo pipefail -c '
-              curl -Ls "https://micro.mamba.pm/api/micromamba/${{ matrix.micromamba_platform }}/latest" | tar -xvj -C /tmp bin/micromamba
-              export MAMBA_ROOT_PREFIX=/tmp/micromamba
-              /tmp/bin/micromamba create -y -n build -c conda-forge python=3.12 pip
-              /tmp/micromamba/envs/build/bin/python -m pip install --upgrade pip
-              /tmp/micromamba/envs/build/bin/python -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}"
-              /tmp/micromamba/envs/build/bin/python scripts/build.py --name "${{ matrix.asset }}"
+              curl -fsSL -o "/tmp/Python-${CPYTHON_VERSION}.tgz" "https://www.python.org/ftp/python/${CPYTHON_VERSION}/Python-${CPYTHON_VERSION}.tgz"
+              tar -xzf "/tmp/Python-${CPYTHON_VERSION}.tgz" -C /tmp
+              cd "/tmp/Python-${CPYTHON_VERSION}"
+              ./configure --prefix=/tmp/cpython --enable-shared --with-ensurepip=install
+              make -j"$(nproc)"
+              make install
+              export LD_LIBRARY_PATH=/tmp/cpython/lib
+              /tmp/cpython/bin/python3 -m pip install --upgrade pip
+              /tmp/cpython/bin/python3 -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}"
+              cd /work
+              /tmp/cpython/bin/python3 scripts/build.py --name "${{ matrix.asset }}"
+              ! readelf --version-info /tmp/cpython/lib/libpython3.12.so.1.0 | grep -Eq "GLIBC_2\\.(1[89]|[2-9][0-9])"
             '
       - uses: actions/setup-python@v6
         if: startsWith(matrix.name, 'macos-')
