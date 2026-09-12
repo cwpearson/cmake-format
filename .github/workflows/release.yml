@@ -60,7 +60,6 @@ jobs:
               tar -xzf "/tmp/Python-${CPYTHON_VERSION}.tgz" -C /tmp
               OPENSSL_PREFIX="$(find /opt/_internal -mindepth 1 -maxdepth 1 -type d -name "openssl-*" | sort -V | tail -n1)"
               test -n "${OPENSSL_PREFIX}"
-              "${OPENSSL_PREFIX}/bin/openssl" version
               cd "/tmp/Python-${CPYTHON_VERSION}"
               ./configure --prefix=/tmp/cpython --enable-shared --with-ensurepip=install --with-openssl="${OPENSSL_PREFIX}" --with-openssl-rpath=auto
               make -j"$(nproc)"
