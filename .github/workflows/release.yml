@@ -18,7 +18,6 @@ env:
   CMAKE_FORMAT_VERSION: "0.6.13"
   PYINSTALLER_VERSION: "6.21.0"
   CPYTHON_VERSION: "3.12.12"
-  OPENSSL_VERSION: "3.0.18"
 
 jobs:
   build:
@@ -55,19 +54,15 @@ jobs:
             -e CMAKE_FORMAT_VERSION \
             -e PYINSTALLER_VERSION \
             -e CPYTHON_VERSION \
-            -e OPENSSL_VERSION \
             ${{ matrix.manylinux_image }} \
             bash -euxo pipefail -c '
               curl -fsSL -o "/tmp/Python-${CPYTHON_VERSION}.tgz" "https://www.python.org/ftp/python/${CPYTHON_VERSION}/Python-${CPYTHON_VERSION}.tgz"
               tar -xzf "/tmp/Python-${CPYTHON_VERSION}.tgz" -C /tmp
-              curl -fsSL -o "/tmp/openssl-${OPENSSL_VERSION}.tgz" "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
-              tar -xzf "/tmp/openssl-${OPENSSL_VERSION}.tgz" -C /tmp
-              cd "/tmp/openssl-${OPENSSL_VERSION}"
-              ./config --prefix=/tmp/openssl --libdir=lib --openssldir=/etc/pki/tls
-              make -j"$(nproc)"
-              make install_sw
+              OPENSSL_PREFIX="$(find /opt/_internal -mindepth 1 -maxdepth 1 -type d -name "openssl-*" | sort -V | tail -n1)"
+              test -n "${OPENSSL_PREFIX}"
+              "${OPENSSL_PREFIX}/bin/openssl" version
               cd "/tmp/Python-${CPYTHON_VERSION}"
-              ./configure --prefix=/tmp/cpython --enable-shared --with-ensurepip=install --with-openssl=/tmp/openssl --with-openssl-rpath=auto
+              ./configure --prefix=/tmp/cpython --enable-shared --with-ensurepip=install --with-openssl="${OPENSSL_PREFIX}" --with-openssl-rpath=auto
               make -j"$(nproc)"
               make install
               export LD_LIBRARY_PATH=/tmp/cpython/lib
