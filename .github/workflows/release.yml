@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "**"
+    tags:
+      - "*"
     paths-ignore:
       - "README.md"
       - ".gitignore"
@@ -16,6 +18,7 @@ env:
   CMAKE_FORMAT_VERSION: "0.6.13"
   PYINSTALLER_VERSION: "6.21.0"
   CPYTHON_VERSION: "3.12.12"
+  OPENSSL_VERSION: "3.0.18"
 
 jobs:
   build:
@@ -52,15 +55,23 @@ jobs:
             -e CMAKE_FORMAT_VERSION \
             -e PYINSTALLER_VERSION \
             -e CPYTHON_VERSION \
+            -e OPENSSL_VERSION \
             ${{ matrix.manylinux_image }} \
             bash -euxo pipefail -c '
               curl -fsSL -o "/tmp/Python-${CPYTHON_VERSION}.tgz" "https://www.python.org/ftp/python/${CPYTHON_VERSION}/Python-${CPYTHON_VERSION}.tgz"
               tar -xzf "/tmp/Python-${CPYTHON_VERSION}.tgz" -C /tmp
+              curl -fsSL -o "/tmp/openssl-${OPENSSL_VERSION}.tgz" "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
+              tar -xzf "/tmp/openssl-${OPENSSL_VERSION}.tgz" -C /tmp
+              cd "/tmp/openssl-${OPENSSL_VERSION}"
+              ./config --prefix=/tmp/openssl --libdir=lib --openssldir=/etc/pki/tls
+              make -j"$(nproc)"
+              make install_sw
               cd "/tmp/Python-${CPYTHON_VERSION}"
-              ./configure --prefix=/tmp/cpython --enable-shared --with-ensurepip=install
+              ./configure --prefix=/tmp/cpython --enable-shared --with-ensurepip=install --with-openssl=/tmp/openssl --with-openssl-rpath=auto
               make -j"$(nproc)"
               make install
               export LD_LIBRARY_PATH=/tmp/cpython/lib
+              /tmp/cpython/bin/python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
               /tmp/cpython/bin/python3 -m pip install --upgrade pip
               /tmp/cpython/bin/python3 -m pip install "cmakelang==${CMAKE_FORMAT_VERSION}" "PyInstaller==${PYINSTALLER_VERSION}"
               cd /work
@@ -80,12 +91,14 @@ jobs:
       - name: Smoke test binary
         run: ./dist/${{ matrix.asset }} --version
       - name: Upload build artifact
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
           path: dist/${{ matrix.asset }}
 
   release:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-latest
 
@@ -95,18 +108,11 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
-      - id: tag
-        name: Compute release tag
-        shell: bash
-        run: |
-          branch="${GITHUB_REF_NAME//\//-}"
-          short_sha="${GITHUB_SHA::7}"
-          echo "tag=${branch}-${short_sha}" >> "$GITHUB_OUTPUT"
       - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ github.ref_name }}
           target_commitish: ${{ github.sha }}
-          name: cmake-format ${{ steps.tag.outputs.tag }}
+          name: cmake-format ${{ github.ref_name }}
           files: artifacts/*
           make_latest: true
