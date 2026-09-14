@@ -33,6 +33,12 @@ def main() -> None:
             "--noconfirm",
             "--clean",
             "--onefile",
+            # cmakelang resolves command parsers dynamically, e.g.
+            # ``cmakelang.parse.funs.add_executable``.  PyInstaller's static
+            # analysis cannot see those imports, so include the full parser
+            # package in the executable.
+            "--collect-submodules",
+            "cmakelang.parse.funs",
             "--name",
             args.name,
             "--distpath",
